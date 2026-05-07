@@ -1,0 +1,1285 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>低智商小游戏十连抽</title>
+    <link href="https://fonts.googleapis.com/css2?family=ZCOOL+KuaiLe&family=Noto+Sans+SC:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --bg-primary: #1a1a2e;
+            --bg-secondary: #16213e;
+            --bg-card: #0f3460;
+            --accent-pink: #ff6b9d;
+            --accent-yellow: #ffd93d;
+            --accent-cyan: #6bcb77;
+            --accent-orange: #ff9f43;
+            --text-primary: #ffffff;
+            --text-secondary: #b8b8d1;
+            --common: #a0a0a0;
+            --rare: #4fc3f7;
+            --epic: #ba68c8;
+            --legendary: #ffd700;
+        }
+
+        body {
+            font-family: 'Noto Sans SC', sans-serif;
+            background: var(--bg-primary);
+            min-height: 100vh;
+            color: var(--text-primary);
+            overflow-x: hidden;
+        }
+
+        /* 背景装饰 */
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background:
+                radial-gradient(circle at 20% 80%, rgba(255, 107, 157, 0.15) 0%, transparent 50%),
+                radial-gradient(circle at 80% 20%, rgba(107, 203, 119, 0.15) 0%, transparent 50%),
+                radial-gradient(circle at 50% 50%, rgba(255, 217, 61, 0.1) 0%, transparent 70%);
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 20px;
+            position: relative;
+            z-index: 1;
+        }
+
+        /* 标题区 */
+        header {
+            text-align: center;
+            padding: 30px 0 20px;
+        }
+
+        h1 {
+            font-family: 'ZCOOL KuaiLe', cursive;
+            font-size: 3rem;
+            background: linear-gradient(135deg, var(--accent-pink), var(--accent-yellow), var(--accent-cyan));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            text-shadow: 0 0 40px rgba(255, 107, 157, 0.5);
+            animation: titleFloat 3s ease-in-out infinite;
+        }
+
+        @keyframes titleFloat {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-10px); }
+        }
+
+        .subtitle {
+            color: var(--text-secondary);
+            margin-top: 10px;
+            font-size: 1.1rem;
+        }
+
+        /* 分数区 */
+        .score-panel {
+            display: flex;
+            justify-content: center;
+            gap: 30px;
+            margin: 20px 0;
+            flex-wrap: wrap;
+        }
+
+        .score-item {
+            background: var(--bg-secondary);
+            padding: 15px 30px;
+            border-radius: 50px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            border: 2px solid transparent;
+            transition: all 0.3s;
+        }
+
+        .score-item.gold { border-color: var(--accent-yellow); }
+        .score-item.streak { border-color: var(--accent-pink); }
+
+        .score-icon {
+            font-size: 1.5rem;
+        }
+
+        .score-value {
+            font-family: 'ZCOOL KuaiLe', cursive;
+            font-size: 1.8rem;
+            color: var(--accent-yellow);
+        }
+
+        .score-label {
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+        }
+
+        /* 抽卡区 */
+        .draw-area {
+            background: var(--bg-secondary);
+            border-radius: 24px;
+            padding: 30px;
+            margin: 30px 0;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .cards-grid {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 15px;
+            margin-bottom: 30px;
+        }
+
+        @media (max-width: 600px) {
+            .cards-grid {
+                grid-template-columns: repeat(3, 1fr);
+            }
+        }
+
+        /* 单张卡牌 */
+        .card {
+            aspect-ratio: 3/4;
+            perspective: 1000px;
+            cursor: pointer;
+        }
+
+        .card-inner {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            transition: transform 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+            transform-style: preserve-3d;
+        }
+
+        .card.flipped .card-inner {
+            transform: rotateY(180deg);
+        }
+
+        .card-front, .card-back {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            backface-visibility: hidden;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: 'ZCOOL KuaiLe', cursive;
+        }
+
+        .card-front {
+            background: linear-gradient(145deg, #2a2a4a, #1a1a3a);
+            border: 3px solid var(--common);
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .card-icon {
+            font-size: 3rem;
+            animation: pulse 2s ease-in-out infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.7; transform: scale(1.1); }
+        }
+
+        .card-back {
+            background: linear-gradient(145deg, #2a2a4a, #1a1a3a);
+            transform: rotateY(180deg);
+            padding: 10px;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .card-icon-back {
+            font-size: 2rem;
+            margin-bottom: 5px;
+        }
+
+        /* 稀有度边框 */
+        .card.common .card-front,
+        .card.common .card-back { border-color: var(--common); }
+        .card.rare .card-front,
+        .card.rare .card-back { border-color: var(--rare); box-shadow: 0 0 20px rgba(79, 195, 247, 0.4); }
+        .card.epic .card-front,
+        .card.epic .card-back { border-color: var(--epic); box-shadow: 0 0 25px rgba(186, 104, 200, 0.5); }
+        .card.legendary .card-front,
+        .card.legendary .card-back { border-color: var(--legendary); box-shadow: 0 0 30px rgba(255, 215, 0, 0.6); animation: legendaryGlow 1.5s ease-in-out infinite; }
+
+        @keyframes legendaryGlow {
+            0%, 100% { box-shadow: 0 0 30px rgba(255, 215, 0, 0.6); }
+            50% { box-shadow: 0 0 50px rgba(255, 215, 0, 0.9); }
+        }
+
+        .card-question {
+            font-size: 0.7rem;
+            text-align: center;
+            color: var(--accent-yellow);
+            line-height: 1.3;
+            margin-bottom: 5px;
+        }
+
+        .card-answer {
+            font-size: 0.6rem;
+            color: var(--text-secondary);
+            text-align: center;
+            padding: 4px;
+            background: rgba(0,0,0,0.3);
+            border-radius: 6px;
+            width: 100%;
+        }
+
+        .card.legendary .card-question { color: var(--legendary); font-size: 0.8rem; }
+        .card.epic .card-question { color: var(--epic); }
+
+        .rarity-badge {
+            position: absolute;
+            top: 5px;
+            right: 5px;
+            font-size: 0.5rem;
+            padding: 2px 6px;
+            border-radius: 4px;
+            background: rgba(0,0,0,0.5);
+        }
+
+        .card.common .rarity-badge { color: var(--common); }
+        .card.rare .rarity-badge { color: var(--rare); }
+        .card.epic .rarity-badge { color: var(--epic); }
+        .card.legendary .rarity-badge { color: var(--legendary); }
+
+        /* 抽卡按钮 */
+        .draw-btn {
+            display: block;
+            width: 100%;
+            max-width: 300px;
+            margin: 0 auto;
+            padding: 20px 40px;
+            font-family: 'ZCOOL KuaiLe', cursive;
+            font-size: 1.8rem;
+            color: white;
+            background: linear-gradient(135deg, var(--accent-pink), #ff8a65);
+            border: none;
+            border-radius: 50px;
+            cursor: pointer;
+            transition: all 0.3s;
+            box-shadow: 0 10px 30px rgba(255, 107, 157, 0.4);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .draw-btn::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: linear-gradient(45deg, transparent, rgba(255,255,255,0.3), transparent);
+            transform: rotate(45deg);
+            transition: all 0.5s;
+        }
+
+        .draw-btn:hover::before {
+            left: 100%;
+        }
+
+        .draw-btn:hover {
+            transform: translateY(-3px) scale(1.02);
+            box-shadow: 0 15px 40px rgba(255, 107, 157, 0.5);
+        }
+
+        .draw-btn:active {
+            transform: translateY(0) scale(0.98);
+        }
+
+        .draw-btn:disabled {
+            background: #555;
+            box-shadow: none;
+            cursor: not-allowed;
+        }
+
+        .draw-btn:disabled:hover {
+            transform: none;
+        }
+
+        /* 答题弹窗 */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.85);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.3s;
+            padding: 20px;
+        }
+
+        .modal-overlay.active {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .modal {
+            background: linear-gradient(145deg, var(--bg-secondary), var(--bg-primary));
+            border-radius: 24px;
+            padding: 40px;
+            max-width: 500px;
+            width: 100%;
+            text-align: center;
+            transform: scale(0.8) translateY(20px);
+            transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+            border: 2px solid var(--accent-pink);
+        }
+
+        .modal-overlay.active .modal {
+            transform: scale(1) translateY(0);
+        }
+
+        .modal-rarity {
+            font-family: 'ZCOOL KuaiLe', cursive;
+            font-size: 1rem;
+            padding: 5px 15px;
+            border-radius: 20px;
+            display: inline-block;
+            margin-bottom: 15px;
+        }
+
+        .modal-rarity.common { background: var(--common); color: #000; }
+        .modal-rarity.rare { background: var(--rare); color: #000; }
+        .modal-rarity.epic { background: var(--epic); color: #fff; }
+        .modal-rarity.legendary { background: linear-gradient(90deg, #ffd700, #ffaa00); color: #000; }
+
+        .modal-question {
+            font-size: 1.4rem;
+            color: var(--accent-yellow);
+            margin: 20px 0;
+            font-family: 'ZCOOL KuaiLe', cursive;
+            line-height: 1.5;
+        }
+
+        .modal-choices {
+            display: flex;
+            gap: 15px;
+            margin-top: 25px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        .choice-btn {
+            flex: 1;
+            min-width: 120px;
+            padding: 15px 20px;
+            font-family: 'Noto Sans SC', sans-serif;
+            font-size: 1.1rem;
+            border: 2px solid var(--accent-cyan);
+            background: transparent;
+            color: var(--text-primary);
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .choice-btn:hover {
+            background: var(--accent-cyan);
+            color: #000;
+            transform: translateY(-2px);
+        }
+
+        .choice-btn.correct {
+            background: var(--accent-cyan);
+            color: #000;
+            animation: correctPop 0.5s;
+        }
+
+        .choice-btn.wrong {
+            background: #ff4757;
+            border-color: #ff4757;
+            animation: shake 0.5s;
+        }
+
+        @keyframes correctPop {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+            100% { transform: scale(1); }
+        }
+
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-10px); }
+            75% { transform: translateX(10px); }
+        }
+
+        /* 结果显示 */
+        .result-answer {
+            margin-top: 20px;
+            padding: 20px;
+            background: rgba(255, 217, 61, 0.1);
+            border-radius: 12px;
+            border: 1px solid var(--accent-yellow);
+            opacity: 0;
+            transform: translateY(10px);
+            transition: all 0.3s;
+        }
+
+        .result-answer.show {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .result-answer h3 {
+            color: var(--accent-yellow);
+            font-family: 'ZCOOL KuaiLe', cursive;
+            margin-bottom: 10px;
+        }
+
+        .result-answer p {
+            font-size: 1.2rem;
+            color: var(--text-primary);
+        }
+
+        .continue-btn {
+            margin-top: 20px;
+            padding: 12px 30px;
+            font-family: 'ZCOOL KuaiLe', cursive;
+            font-size: 1.1rem;
+            background: var(--accent-pink);
+            color: white;
+            border: none;
+            border-radius: 25px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .continue-btn:hover {
+            transform: scale(1.05);
+            box-shadow: 0 5px 20px rgba(255, 107, 157, 0.4);
+        }
+
+        /* 特效 */
+        .confetti {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 2000;
+            overflow: hidden;
+        }
+
+        .confetti-piece {
+            position: absolute;
+            width: 10px;
+            height: 10px;
+            background: var(--accent-yellow);
+            animation: confettiFall 3s ease-out forwards;
+        }
+
+        @keyframes confettiFall {
+            0% { transform: translateY(-100vh) rotate(0deg); opacity: 1; }
+            100% { transform: translateY(100vh) rotate(720deg); opacity: 0; }
+        }
+
+        /* 统计区 */
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 10px;
+            margin-top: 20px;
+        }
+
+        @media (max-width: 500px) {
+            .stats {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+
+        .stat-item {
+            background: var(--bg-card);
+            padding: 12px;
+            border-radius: 12px;
+            text-align: center;
+        }
+
+        .stat-value {
+            font-family: 'ZCOOL KuaiLe', cursive;
+            font-size: 1.5rem;
+        }
+
+        .stat-label {
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+        }
+
+        .stat-item:nth-child(1) .stat-value { color: var(--common); }
+        .stat-item:nth-child(2) .stat-value { color: var(--rare); }
+        .stat-item:nth-child(3) .stat-value { color: var(--epic); }
+        .stat-item:nth-child(4) .stat-value { color: var(--legendary); }
+
+        /* 称号区域 */
+        .titles-section {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            margin: 20px 0;
+            flex-wrap: wrap;
+        }
+
+        .title-badge {
+            background: var(--bg-secondary);
+            padding: 12px 25px;
+            border-radius: 50px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            border: 2px solid transparent;
+            opacity: 0.4;
+            filter: grayscale(100%);
+            transition: all 0.5s;
+        }
+
+        .title-badge.unlocked {
+            opacity: 1;
+            filter: grayscale(0%);
+        }
+
+        .title-badge.coffee {
+            border-color: #8B4513;
+        }
+        .title-badge.coffee.unlocked {
+            background: linear-gradient(135deg, #8B4513, #D2691E);
+            box-shadow: 0 0 20px rgba(139, 69, 19, 0.5);
+        }
+
+        .title-badge.food {
+            border-color: var(--accent-orange);
+        }
+        .title-badge.food.unlocked {
+            background: linear-gradient(135deg, var(--accent-orange), #ff6b6b);
+            box-shadow: 0 0 20px rgba(255, 159, 67, 0.5);
+        }
+
+        .title-icon {
+            font-size: 1.5rem;
+        }
+
+        .title-info {
+            text-align: left;
+        }
+
+        .title-name {
+            font-family: 'ZCOOL KuaiLe', cursive;
+            font-size: 1rem;
+            color: var(--text-primary);
+        }
+
+        .title-progress {
+            font-size: 0.7rem;
+            color: var(--text-secondary);
+        }
+
+        .title-badge.unlocked .title-progress {
+            color: #fff;
+        }
+
+        /* 成就解锁动画 */
+        @keyframes titleUnlock {
+            0% { transform: scale(0) rotate(-180deg); opacity: 0; }
+            50% { transform: scale(1.3) rotate(10deg); }
+            100% { transform: scale(1) rotate(0deg); opacity: 1; }
+        }
+
+        .title-badge.just-unlocked {
+            animation: titleUnlock 0.8s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+
+        /* 成就弹窗 */
+        .achievement-modal {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%) scale(0);
+            background: linear-gradient(145deg, var(--bg-secondary), var(--bg-primary));
+            border-radius: 24px;
+            padding: 40px;
+            text-align: center;
+            z-index: 3000;
+            border: 3px solid;
+            transition: transform 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+
+        .achievement-modal.show {
+            transform: translate(-50%, -50%) scale(1);
+        }
+
+        .achievement-modal.coffee { border-color: #D2691E; }
+        .achievement-modal.food { border-color: var(--accent-orange); }
+
+        .achievement-icon {
+            font-size: 4rem;
+            margin-bottom: 15px;
+        }
+
+        .achievement-title {
+            font-family: 'ZCOOL KuaiLe', cursive;
+            font-size: 2rem;
+            margin-bottom: 10px;
+        }
+
+        .achievement-desc {
+            color: var(--text-secondary);
+            margin-bottom: 20px;
+        }
+
+        .achievement-close {
+            padding: 10px 30px;
+            font-family: 'ZCOOL KuaiLe', cursive;
+            font-size: 1rem;
+            border: none;
+            border-radius: 25px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .achievement-modal.coffee .achievement-close { background: #D2691E; color: white; }
+        .achievement-modal.food .achievement-close { background: var(--accent-orange); color: white; }
+
+        .achievement-close:hover {
+            transform: scale(1.05);
+        }
+
+        .achievement-backdrop {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.7);
+            z-index: 2999;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.3s;
+        }
+
+        .achievement-backdrop.show {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        /* 抽卡动画遮罩 */
+        .draw-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.9);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 999;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.3s;
+        }
+
+        .draw-overlay.active {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .draw-text {
+            font-family: 'ZCOOL KuaiLe', cursive;
+            font-size: 3rem;
+            color: var(--accent-yellow);
+            animation: drawPulse 0.5s ease-in-out infinite;
+        }
+
+        @keyframes drawPulse {
+            0%, 100% { transform: scale(1); opacity: 1; }
+            50% { transform: scale(1.2); opacity: 0.8; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>低智商小游戏十连抽</h1>
+            <p class="subtitle">测测你的脑洞有多大！</p>
+        </header>
+
+        <div class="score-panel">
+            <div class="score-item gold">
+                <span class="score-icon">🪙</span>
+                <div>
+                    <div class="score-value" id="goldCount">0</div>
+                    <div class="score-label">金币</div>
+                </div>
+            </div>
+            <div class="score-item streak">
+                <span class="score-icon">🔥</span>
+                <div>
+                    <div class="score-value" id="streakCount">0</div>
+                    <div class="score-label">连胜</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="titles-section">
+            <div class="title-badge coffee" id="coffeeBadge">
+                <span class="title-icon">☕</span>
+                <div class="title-info">
+                    <div class="title-name">咖啡大师</div>
+                    <div class="title-progress" id="coffeeProgress">0/5 杯咖啡</div>
+                </div>
+            </div>
+            <div class="title-badge food" id="foodBadge">
+                <span class="title-icon">🍜</span>
+                <div class="title-info">
+                    <div class="title-name">干饭人</div>
+                    <div class="title-progress" id="foodProgress">0/5 顿饭</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="draw-area">
+            <div class="cards-grid" id="cardsGrid">
+                <!-- 卡片将由JS生成 -->
+            </div>
+            <button class="draw-btn" id="drawBtn">🎰 开始十连抽</button>
+        </div>
+
+        <div class="stats">
+            <div class="stat-item">
+                <div class="stat-value" id="statCommon">0</div>
+                <div class="stat-label">普通</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-value" id="statRare">0</div>
+                <div class="stat-label">稀有</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-value" id="statEpic">0</div>
+                <div class="stat-label">史诗</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-value" id="statLegendary">0</div>
+                <div class="stat-label">传说</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 抽卡动画遮罩 -->
+    <div class="draw-overlay" id="drawOverlay">
+        <div class="draw-text">🎲 抽卡中...</div>
+    </div>
+
+    <!-- 答题弹窗 -->
+    <div class="modal-overlay" id="modalOverlay">
+        <div class="modal">
+            <div class="modal-rarity" id="modalRarity">普通</div>
+            <div class="modal-question" id="modalQuestion">问题内容</div>
+            <div class="modal-choices" id="modalChoices">
+                <button class="choice-btn">A. 选项一</button>
+                <button class="choice-btn">B. 选项二</button>
+            </div>
+            <div class="result-answer" id="resultAnswer">
+                <h3>💡 答案揭晓</h3>
+                <p id="resultText">这里是答案</p>
+            </div>
+            <button class="continue-btn" id="continueBtn" style="display:none;">下一题 →</button>
+        </div>
+    </div>
+
+    <!-- 彩屑特效容器 -->
+    <div class="confetti" id="confetti"></div>
+
+    <!-- 成就弹窗 -->
+    <div class="achievement-backdrop" id="achievementBackdrop"></div>
+    <div class="achievement-modal" id="achievementModal">
+        <div class="achievement-icon" id="achievementIcon">🏆</div>
+        <div class="achievement-title" id="achievementTitle">成就解锁！</div>
+        <div class="achievement-desc" id="achievementDesc">恭喜你获得了新称号</div>
+        <button class="achievement-close" id="achievementClose">太棒了！</button>
+    </div>
+
+    <script>
+        // 问题库
+        const questions = [
+            { q: "猫会说话的话第一句会说什么？", a: "喵~（在骂人）", icon: "🐱", choices: ["喵~", "你好", "给我吃的", "我要睡觉"] },
+            { q: "如果狗狗会上网，它们会搜什么？", a: "骨头哪里买", icon: "🐶", choices: ["狗粮评测", "骨头哪里买", "遛狗技巧", "宠物医院"] },
+            { q: "李白为什么写诗那么厉害？", a: "因为他有外挂（剑）", icon: "⚔️", choices: ["因为他是学霸", "因为他有外挂（剑）", "因为唐朝教育好", "因为他很努力"] },
+            { q: "早餐不能吃什么？", a: "午餐和晚餐", icon: "🍳", choices: ["早餐不能吃午餐和晚餐", "早餐不能吃辣", "早餐不能吃太多", "早餐不能省钱"] },
+            { q: "什么人一年只工作一分钟？", a: "圣诞老人", icon: "🎅", choices: ["老板", "圣诞老人", "公务员", "网红"] },
+            { q: "什么鱼最笨？", a: "比目鱼（比目鱼）", icon: "🐟", choices: ["金鱼", "比目鱼（比目鱼）", "鲨鱼", "鲸鱼"] },
+            { q: "什么瓜不能吃？", a: "傻瓜", icon: "🤪", choices: ["西瓜", "傻瓜", "黄瓜", "南瓜"] },
+            { q: "谁最容易被蚊子咬？", a: "蚊子喜欢的人", icon: "🦟", choices: ["O型血", "蚊子喜欢的人", "小孩", "胖子"] },
+            { q: "为什么太阳比月亮大？", a: "因为眼睛欺骗了你", icon: "☀️", choices: ["本来就大", "因为眼睛欺骗了你", "距离问题", "测量错误"] },
+            { q: "人为什么要睡觉？", a: "因为困", icon: "😴", choices: ["因为累", "因为困", "因为要休息", "因为地球自转"] },
+            { q: "为什么我总是迟到？", a: "因为时间在跟我作对", icon: "⏰", choices: ["因为懒", "因为时间在跟我作对", "因为路远", "因为不重视"] },
+            { q: "世界上最难做的菜是什么？", a: "随便", icon: "🍳", choices: ["随便", "火锅", "蛋炒饭", "佛跳墙"] },
+            { q: "为什么你总单身？", a: "因为月老还没准备好", icon: "💕", choices: ["因为眼光高", "因为月老还没准备好", "因为穷", "因为工作忙"] },
+            { q: "什么车最省油？", a: "购物车", icon: "🛒", choices: ["特斯拉", "购物车", "自行车", "公交车"] },
+            { q: "为什么学霸成绩那么好？", a: "因为他们偷偷学习", icon: "📚", choices: ["因为聪明", "因为他们偷偷学习", "因为老师好", "因为题简单"] },
+            { q: "什么时候1+1=3？", a: "算错的时候", icon: "🧮", choices: ["永远不等于3", "算错的时候", "在梦里", "在数学课上"] },
+            { q: "为什么有人叫外卖？", a: "因为懒得出门", icon: "🍔", choices: ["因为忙", "因为懒得出门", "因为不会做饭", "因为好吃"] },
+            { q: "什么动物最懒？", a: "考拉（除了睡觉就是睡觉）", icon: "🐨", choices: ["猪", "考拉（除了睡觉就是睡觉）", "猫", "树懒"] },
+            { q: "为什么你总没钱？", a: "因为工资发完就没了", icon: "💸", choices: ["因为花太多", "因为工资发完就没了", "因为赚太少", "因为买了太多"] },
+            { q: "减肥为什么这么难？", a: "因为美食太好吃了", icon: "🍰", choices: ["因为懒", "因为美食太好吃了", "因为代谢慢", "因为体质问题"] },
+            { q: "为什么你总是焦虑？", a: "因为想太多", icon: "😰", choices: ["因为工作压力", "因为想太多", "因为没钱", "因为感情"] },
+            { q: "为什么熊喜欢吃蜂蜜？", a: "因为甜啊！", icon: "🐻", choices: ["因为营养", "因为甜啊！", "因为没别的吃的", "因为习惯"] },
+            { q: "什么水永远喝不完？", a: "薪水", icon: "💧", choices: ["自来水", "薪水", "矿泉水", "河水"] },
+            { q: "为什么人有两个鼻孔？", a: "为了一个堵了还有另一个", icon: "👃", choices: ["为了更帅", "为了一个堵了还有另一个", "进化来的", "不知道"] },
+            { q: "什么动物最像人？", a: "猩猩（进化论说的）", icon: "🦍", choices: ["狗", "猩猩（进化论说的）", "猴子", "机器人"] },
+            { q: "为什么你总觉得自己丑？", a: "因为镜子不会说谎", icon: "🪞", choices: ["因为真的丑", "因为镜子不会说谎", "因为没化妆", "因为不自信"] },
+            { q: "什么纸最贵？", a: "离婚协议书", icon: "📄", choices: ["纸币", "离婚协议书", "合同", "情书"] },
+            { q: "为什么你总是迷茫？", a: "因为人生没有说明书", icon: "🌫️", choices: ["因为选择多", "因为人生没有说明书", "因为没目标", "因为太年轻"] },
+            { q: "什么山最高？", a: "书山（书山有路勤为径）", icon: "📚", choices: ["珠穆朗玛峰", "书山（书山有路勤为径）", "乔戈里峰", "富士山"] },
+            { q: "为什么你会选择困难？", a: "因为每个都想要", icon: "🤔", choices: ["因为不了解", "因为每个都想要", "因为没钱", "因为没主见"] },
+            { q: "什么海最吓人？", a: "人海（茫茫人海）", icon: "🌊", choices: ["死海", "人海（茫茫人海）", "红海", "黑海"] },
+            { q: "为什么你总是后悔？", a: "因为事后才明白", icon: "😔", choices: ["因为冲动", "因为事后才明白", "因为选择错", "因为不理智"] },
+            { q: "什么风最可怕？", a: "枕边风（老婆说的）", icon: "💨", choices: ["台风", "枕边风（老婆说的）", "龙卷风", "北风"] },
+            { q: "为什么你总是睡不着？", a: "因为脑子在演电影", icon: "🎬", choices: ["因为不困", "因为脑子在演电影", "因为焦虑", "因为咖啡喝多了"] },
+            { q: "什么蛋最贵？", a: "混蛋（骂人）", icon: "🥚", choices: ["恐龙蛋", "混蛋（骂人）", "鸡蛋", "鹅蛋"] },
+            { q: "为什么你总存不到钱？", a: "因为总有想买的东西", icon: "💳", choices: ["因为工资低", "因为总有想买的东西", "因为花销大", "因为物价高"] },
+            { q: "什么鱼最会拍马屁？", a: "三文鱼（金枪鱼也勉强）", icon: "🐠", choices: ["三文鱼", "三文鱼（金枪鱼也勉强）", "鲤鱼", "鲈鱼"] },
+            { q: "为什么你总被套路？", a: "因为善良", icon: "🥺", choices: ["因为笨", "因为善良", "因为不设防", "因为太天真"] },
+            { q: "什么车最堵？", a: "堵车（堵在路上）", icon: "🚗", choices: ["公交车", "堵车（堵在路上）", "出租车", "地铁"] },
+            { q: "为什么你总感觉累？", a: "因为在活着", icon: "😩", choices: ["因为工作多", "因为在活着", "因为睡眠不足", "因为压力大"] },
+            { q: "什么字写起来最简单？", a: "一（最简单）", icon: "✏️", choices: ["人", "一（最简单）", "大", "中"] },
+            { q: "为什么你总输？", a: "因为对手太强", icon: "🎮", choices: ["因为运气差", "因为对手太强", "因为技术差", "因为不努力"] },
+            { q: "什么话最伤人？", a: "实话", icon: "💔", choices: ["脏话", "实话", "假话", "气话"] },
+            { q: "为什么你总被拒绝？", a: "因为还没遇到对的人", icon: "💔", choices: ["因为你不够好", "因为还没遇到对的人", "因为不主动", "因为运气差"] },
+            { q: "什么人会变傻？", a: "热恋中的人", icon: "😍", choices: ["喝醉的人", "热恋中的人", "生病的人", "熬夜的人"] },
+            { q: "为什么你总想辞职？", a: "因为穷但不开心", icon: "💼", choices: ["因为累", "因为穷但不开心", "因为老板差", "因为没发展"] },
+            { q: "什么线看不见？", a: "生命线、感情线、事业线", icon: "🖐️", choices: ["电线", "生命线、感情线、事业线", "网线", "红线"] },
+            { q: "为什么你总做噩梦？", a: "因为白天太美好了", icon: "😱", choices: ["因为压力大", "因为白天太美好了", "因为看恐怖片", "因为不规律"] },
+            { q: "什么人最逗？", a: "发工资前的人（穷开心）", icon: "🤣", choices: ["网红", "发工资前的人（穷开心）", "小品演员", "网友"] },
+            { q: "为什么你会秃头？", a: "因为脑子太聪明了（聪明绝顶）", icon: "🧠", choices: ["因为压力大", "因为脑子太聪明了（聪明绝顶）", "因为熬夜", "因为遗传"] },
+        ];
+
+        // 咖啡类问题
+        const coffeeQuestions = [
+            { q: "咖啡豆其实是哪种植物的种子？", a: "咖啡樱桃（红色浆果）", icon: "☕", choices: ["咖啡豆是咖啡树的果实", "咖啡樱桃（红色浆果）", "咖啡豆是一种坚果", "咖啡树的根部"] },
+            { q: "浓缩咖啡为什么要叫这个名字？", a: "因为是「快速」的意思", icon: "⚡", choices: ["因为好喝", "因为是「快速」的意思", "因为是意大利语", "因为咖啡师的名字"] },
+            { q: "拿铁在意大利语里是什么意思？", a: "牛奶", icon: "🥛", choices: ["咖啡", "牛奶", "早餐", "美味"] },
+            { q: "为什么咖啡闻起来比喝起来更香？", a: "因为嗅觉比味觉更灵敏", icon: "👃", choices: ["因为鼻子比舌头好使", "因为嗅觉比味觉更灵敏", "因为咖啡会挥发", "心理作用"] },
+            { q: "美式咖啡为什么叫美式？", a: "因为二战时美国士兵嫌espresso太浓", icon: "🇺🇸", choices: ["美国发明", "因为二战时美国士兵嫌espresso太浓", "因为杯子大", "因为颜色像美国国旗"] },
+            { q: "咖啡因起效需要多久？", a: "约20-45分钟", icon: "⏱️", choices: ["立刻", "约20-45分钟", "2小时", "10分钟"] },
+            { q: "一杯浓缩咖啡里有多少咖啡因？", a: "约63毫克（比美式少）", icon: "💊", choices: ["比美式多", "约63毫克（比美式少）", "200毫克", "10毫克"] },
+            { q: "冷萃咖啡为什么更贵？", a: "因为需要12-24小时制作", icon: "🧊", choices: ["因为好喝", "因为需要12-24小时制作", "因为用了冷气泡", "因为名字好听"] },
+            { q: "咖啡师为什么要练拉花？", a: "为了拍照发朋友圈（不是）", icon: "📸", choices: ["为了好吃", "为了拍照发朋友圈（不是）", "为了证明技术", "为了让咖啡更好喝"] },
+            { q: "世界上最贵的咖啡是什么？", a: "麝香猫咖啡(Kopi Luwak)", icon: "🐱", choices: ["蓝山咖啡", "麝香猫咖啡(Kopi Luwak)", "猫屎咖啡", "象屎咖啡"] },
+            { q: "为什么下午喝咖啡容易睡不着？", a: "因为咖啡因半衰期约6小时", icon: "🌙", choices: ["因为太兴奋", "因为咖啡因半衰期约6小时", "因为体质问题", "因为喝太多"] },
+            { q: "卡布奇诺的泡泡是什么？", a: "打发牛奶的奶泡", icon: "🥛", choices: ["奶油", "打发牛奶的奶泡", "糖", "咖啡油脂"] },
+        ];
+
+        // 美食类问题
+        const foodQuestions = [
+            { q: "为什么泡面要等3分钟而不是5分钟？", a: "因为这是营销策略", icon: "🍜", choices: ["因为这样更好吃", "因为这是营销策略", "因为水会凉", "因为面会烂"] },
+            { q: "麻辣烫为什么叫麻辣烫？", a: "因为又麻又辣还烫嘴", icon: "🌶️", choices: ["因为四川人发明", "因为又麻又辣还烫嘴", "因为用烫的方式做", "因为食材名字"] },
+            { q: "外卖为什么总比堂食慢？", a: "因为要算上路程时间", icon: "🛵", choices: ["因为骑手要送", "因为要算上路程时间", "因为厨房要打包", "因为平台派单"] },
+            { q: "自助餐为什么能吃到扶墙出？", a: "因为贵，要吃回本", icon: "🍽️", choices: ["因为饿", "因为贵，要吃回本", "因为太好吃了", "因为不限量"] },
+            { q: "火锅为什么需要蘸料？", a: "因为原味太单调", icon: "🍲", choices: ["因为习俗", "因为原味太单调", "因为更健康", "因为更好看"] },
+            { q: "为什么螺蛳粉闻着臭吃着香？", a: "因为酸笋发酵的味道", icon: "🦠", choices: ["因为加了臭豆腐", "因为酸笋发酵的味道", "因为心理作用", "因为工艺特殊"] },
+            { q: "奶茶为什么要加冰？", a: "因为冰的更好喝（营销）", icon: "🧋", choices: ["因为好喝", "因为冰的更好喝（营销）", "因为卫生", "因为看起来更多"] },
+            { q: "为什么干饭人要吃三碗饭？", a: "因为一碗不够吃", icon: "🍚", choices: ["因为饿", "因为一碗不够吃", "因为菜太好", "因为习俗"] },
+            { q: "炒饭为什么要用隔夜饭？", a: "因为水分少，米粒更弹", icon: "🍳", choices: ["因为省钱", "因为水分少，米粒更弹", "因为更好看", "因为方便"] },
+            { q: "为什么烧烤在晚上更好吃？", a: "因为有氛围感", icon: "🔥", choices: ["因为凉快", "因为有氛围感", "因为炭火旺", "因为配啤酒"] },
+            { q: "糖醋排骨为什么是甜的？", a: "因为放了糖啊！", icon: "🍖", choices: ["因为粤菜偏甜", "因为放了糖啊！", "因为要上色", "因为排骨问题"] },
+            { q: "为什么日料店都很小？", a: "因为omakase需要沉浸式体验", icon: "🍣", choices: ["因为日本地方小", "因为omakase需要沉浸式体验", "因为省钱", "因为装修风格"] },
+        ];
+
+        // 游戏状态
+        let gold = 0;
+        let streak = 0;
+        let currentCards = [];
+        let currentIndex = 0;
+        let stats = { common: 0, rare: 0, epic: 0, legendary: 0 };
+        let isDrawing = false;
+        let usedQuestions = [];
+        let usedCoffeeQuestions = [];
+        let usedFoodQuestions = [];
+        let coffeeCorrect = 0;
+        let foodCorrect = 0;
+        let titles = { coffee: false, food: false };
+        const TITLE_REQUIRED = 5;
+
+        // DOM元素
+        const cardsGrid = document.getElementById('cardsGrid');
+        const drawBtn = document.getElementById('drawBtn');
+        const modalOverlay = document.getElementById('modalOverlay');
+        const modalQuestion = document.getElementById('modalQuestion');
+        const modalChoices = document.getElementById('modalChoices');
+        const modalRarity = document.getElementById('modalRarity');
+        const resultAnswer = document.getElementById('resultAnswer');
+        const resultText = document.getElementById('resultText');
+        const continueBtn = document.getElementById('continueBtn');
+        const drawOverlay = document.getElementById('drawOverlay');
+        const confettiContainer = document.getElementById('confetti');
+
+        // 稀有度配置
+        const rarities = [
+            { name: 'common', label: '普通', color: '#a0a0a0', weight: 50 },
+            { name: 'rare', label: '稀有', color: '#4fc3f7', weight: 30 },
+            { name: 'epic', label: '史诗', color: '#ba68c8', weight: 15 },
+            { name: 'legendary', label: '传说', color: '#ffd700', weight: 5 }
+        ];
+
+        // 获取随机稀有度
+        function getRandomRarity() {
+            const totalWeight = rarities.reduce((sum, r) => sum + r.weight, 0);
+            let random = Math.random() * totalWeight;
+            for (const r of rarities) {
+                random -= r.weight;
+                if (random <= 0) return r;
+            }
+            return rarities[0];
+        }
+
+        // 获取随机问题
+        function getRandomQuestion() {
+            // 30%概率抽到特殊问题
+            const roll = Math.random();
+            if (roll < 0.15 && usedCoffeeQuestions.length < coffeeQuestions.length) {
+                let index;
+                do {
+                    index = Math.floor(Math.random() * coffeeQuestions.length);
+                } while (usedCoffeeQuestions.includes(index));
+                usedCoffeeQuestions.push(index);
+                return { ...coffeeQuestions[index], category: 'coffee' };
+            } else if (roll < 0.30 && usedFoodQuestions.length < foodQuestions.length) {
+                let index;
+                do {
+                    index = Math.floor(Math.random() * foodQuestions.length);
+                } while (usedFoodQuestions.includes(index));
+                usedFoodQuestions.push(index);
+                return { ...foodQuestions[index], category: 'food' };
+            }
+
+            if (usedQuestions.length >= questions.length) {
+                usedQuestions = [];
+            }
+            let index;
+            do {
+                index = Math.floor(Math.random() * questions.length);
+            } while (usedQuestions.includes(index));
+            usedQuestions.push(index);
+            return { ...questions[index], category: 'normal' };
+        }
+
+        // 创建卡片
+        function createCard(rarity, question) {
+            const icon = question.icon || '❓';
+            const card = document.createElement('div');
+            card.className = `card ${rarity.name}`;
+            card.innerHTML = `
+                <div class="card-inner">
+                    <div class="card-front">
+                        <span class="card-icon">${icon}</span>
+                        <span class="rarity-badge">${rarity.label}</span>
+                    </div>
+                    <div class="card-back">
+                        <span class="rarity-badge">${rarity.label}</span>
+                        <div class="card-icon-back">${icon}</div>
+                        <div class="card-question"></div>
+                        <div class="card-answer">点击查看答案</div>
+                    </div>
+                </div>
+            `;
+            card.addEventListener('click', () => flipCard(card));
+            return card;
+        }
+
+        // 翻转卡片
+        function flipCard(card) {
+            if (!card.classList.contains('flipped')) {
+                card.classList.add('flipped');
+            }
+        }
+
+        // 显示答题弹窗
+        function showQuizModal(index) {
+            const cardData = currentCards[index];
+            currentIndex = index;
+
+            modalRarity.textContent = cardData.rarity.label;
+            modalRarity.className = `modal-rarity ${cardData.rarity.name}`;
+            modalQuestion.textContent = cardData.question.q;
+
+            const choices = cardData.question.choices || [
+                cardData.question.a,
+                "错", "错", "错"
+            ].slice(0, 4);
+
+            // 确保正确答案在里面
+            if (!choices.includes(cardData.question.a)) {
+                choices[0] = cardData.question.a;
+            }
+
+            // 打乱选项
+            choices.sort(() => Math.random() - 0.5);
+
+            modalChoices.innerHTML = choices.map((c, i) =>
+                `<button class="choice-btn" data-answer="${c === cardData.question.a}">${String.fromCharCode(65 + i)}. ${c}</button>`
+            ).join('');
+
+            resultAnswer.classList.remove('show');
+            continueBtn.style.display = 'none';
+
+            // 绑定选项事件
+            modalChoices.querySelectorAll('.choice-btn').forEach(btn => {
+                btn.addEventListener('click', handleAnswer);
+            });
+
+            modalOverlay.classList.add('active');
+        }
+
+        // 处理答案
+        function handleAnswer(e) {
+            const isCorrect = e.target.dataset.answer === 'true';
+            const buttons = modalChoices.querySelectorAll('.choice-btn');
+
+            buttons.forEach(btn => {
+                btn.style.pointerEvents = 'none';
+                if (btn.dataset.answer === 'true') {
+                    btn.classList.add('correct');
+                } else if (e.target === btn && !isCorrect) {
+                    btn.classList.add('wrong');
+                }
+            });
+
+            if (isCorrect) {
+                gold += getGoldReward(currentCards[currentIndex].rarity.name);
+                streak++;
+                document.getElementById('goldCount').textContent = gold;
+                document.getElementById('streakCount').textContent = streak;
+                showConfetti();
+
+                // 检查称号进度
+                const category = currentCards[currentIndex].question.category;
+                if (category === 'coffee') {
+                    coffeeCorrect++;
+                    updateTitleProgress('coffee');
+                    checkTitleUnlock('coffee');
+                } else if (category === 'food') {
+                    foodCorrect++;
+                    updateTitleProgress('food');
+                    checkTitleUnlock('food');
+                }
+            } else {
+                streak = 0;
+                document.getElementById('streakCount').textContent = streak;
+            }
+
+            resultText.textContent = currentCards[currentIndex].question.a;
+            resultAnswer.classList.add('show');
+            continueBtn.style.display = 'inline-block';
+        }
+
+        // 更新称号进度显示
+        function updateTitleProgress(type) {
+            if (type === 'coffee') {
+                document.getElementById('coffeeProgress').textContent = `${coffeeCorrect}/${TITLE_REQUIRED} 杯咖啡`;
+            } else if (type === 'food') {
+                document.getElementById('foodProgress').textContent = `${foodCorrect}/${TITLE_REQUIRED} 顿饭`;
+            }
+        }
+
+        // 检查称号是否解锁
+        function checkTitleUnlock(type) {
+            if (type === 'coffee' && coffeeCorrect >= TITLE_REQUIRED && !titles.coffee) {
+                titles.coffee = true;
+                showAchievementModal('coffee');
+            } else if (type === 'food' && foodCorrect >= TITLE_REQUIRED && !titles.food) {
+                titles.food = true;
+                showAchievementModal('food');
+            }
+            saveGameData();
+        }
+
+        // 显示成就弹窗
+        function showAchievementModal(type) {
+            const modal = document.getElementById('achievementModal');
+            const backdrop = document.getElementById('achievementBackdrop');
+            const icon = document.getElementById('achievementIcon');
+            const title = document.getElementById('achievementTitle');
+            const desc = document.getElementById('achievementDesc');
+
+            modal.className = `achievement-modal ${type} show`;
+            backdrop.classList.add('show');
+
+            if (type === 'coffee') {
+                icon.textContent = '☕';
+                title.textContent = '咖啡大师';
+                desc.textContent = '你答对了5杯咖啡的问题，成为真正的咖啡大师！';
+                document.getElementById('coffeeBadge').classList.add('unlocked', 'just-unlocked');
+                setTimeout(() => {
+                    document.getElementById('coffeeBadge').classList.remove('just-unlocked');
+                }, 800);
+            } else if (type === 'food') {
+                icon.textContent = '🍜';
+                title.textContent = '干饭人';
+                desc.textContent = '你答对了5顿饭的问题，成为无敌干饭人！';
+                document.getElementById('foodBadge').classList.add('unlocked', 'just-unlocked');
+                setTimeout(() => {
+                    document.getElementById('foodBadge').classList.remove('just-unlocked');
+                }, 800);
+            }
+
+            showConfetti();
+            setTimeout(showConfetti, 200);
+        }
+
+        // 关闭成就弹窗
+        document.getElementById('achievementClose').addEventListener('click', () => {
+            document.getElementById('achievementModal').classList.remove('show');
+            document.getElementById('achievementBackdrop').classList.remove('show');
+        });
+
+        // 获取金币奖励
+        function getGoldReward(rarity) {
+            const rewards = { common: 10, rare: 25, epic: 50, legendary: 100 };
+            return rewards[rarity] || 10;
+        }
+
+        // 显示彩屑
+        function showConfetti() {
+            const colors = ['#ff6b9d', '#ffd93d', '#6bcb77', '#4fc3f7', '#ba68c8'];
+            for (let i = 0; i < 50; i++) {
+                const piece = document.createElement('div');
+                piece.className = 'confetti-piece';
+                piece.style.left = Math.random() * 100 + '%';
+                piece.style.background = colors[Math.floor(Math.random() * colors.length)];
+                piece.style.animationDelay = Math.random() * 0.5 + 's';
+                piece.style.animationDuration = (2 + Math.random()) + 's';
+                confettiContainer.appendChild(piece);
+                setTimeout(() => piece.remove(), 3500);
+            }
+        }
+
+        // 继续下一题
+        continueBtn.addEventListener('click', () => {
+            modalOverlay.classList.remove('active');
+            currentIndex++;
+            if (currentIndex < currentCards.length) {
+                setTimeout(() => showQuizModal(currentIndex), 300);
+            }
+        });
+
+        // 开始抽卡
+        drawBtn.addEventListener('click', async () => {
+            if (isDrawing) return;
+            isDrawing = true;
+            drawBtn.disabled = true;
+            drawOverlay.classList.add('active');
+
+            // 清空之前的卡
+            cardsGrid.innerHTML = '';
+            currentCards = [];
+
+            // 生成10张卡
+            for (let i = 0; i < 10; i++) {
+                const rarity = getRandomRarity();
+                const question = getRandomQuestion();
+                currentCards.push({ rarity, question });
+                stats[rarity.name]++;
+                document.getElementById(`stat${rarity.name.charAt(0).toUpperCase() + rarity.name.slice(1)}`).textContent = stats[rarity.name];
+            }
+
+            // 显示抽卡动画
+            await new Promise(resolve => setTimeout(resolve, 1500));
+            drawOverlay.classList.remove('active');
+
+            // 创建卡片（先全部创建但不翻转）
+            currentCards.forEach((cardData, index) => {
+                const card = createCard(cardData.rarity, cardData.question);
+                const cardInner = card.querySelector('.card-inner');
+                const cardBack = card.querySelector('.card-back');
+                cardBack.querySelector('.card-question').textContent = cardData.question.q;
+
+                // 依次翻转动画
+                setTimeout(() => {
+                    card.classList.add('flipped');
+                }, index * 150);
+
+                card.addEventListener('click', () => {
+                    showQuizModal(index);
+                });
+
+                cardsGrid.appendChild(card);
+            });
+
+            // 等待所有卡片翻转完成后可以再次抽卡
+            setTimeout(() => {
+                isDrawing = false;
+                drawBtn.disabled = false;
+                drawBtn.textContent = '🔄 再来十连抽';
+            }, 1500 + 10 * 150 + 500);
+
+            // 保存数据到localStorage
+            saveGameData();
+        });
+
+        // 保存游戏数据
+        function saveGameData() {
+            localStorage.setItem('lowIQGame', JSON.stringify({
+                gold, streak, stats, coffeeCorrect, foodCorrect, titles
+            }));
+        }
+
+        // 页面加载时恢复数据
+        function loadGameData() {
+            const saved = localStorage.getItem('lowIQGame');
+            if (saved) {
+                const data = JSON.parse(saved);
+                gold = data.gold || 0;
+                streak = data.streak || 0;
+                stats = data.stats || { common: 0, rare: 0, epic: 0, legendary: 0 };
+                coffeeCorrect = data.coffeeCorrect || 0;
+                foodCorrect = data.foodCorrect || 0;
+                titles = data.titles || { coffee: false, food: false };
+
+                document.getElementById('goldCount').textContent = gold;
+                document.getElementById('streakCount').textContent = streak;
+                document.getElementById('statCommon').textContent = stats.common;
+                document.getElementById('statRare').textContent = stats.rare;
+                document.getElementById('statEpic').textContent = stats.epic;
+                document.getElementById('statLegendary').textContent = stats.legendary;
+
+                // 恢复称号状态
+                updateTitleProgress('coffee');
+                updateTitleProgress('food');
+                if (titles.coffee) {
+                    document.getElementById('coffeeBadge').classList.add('unlocked');
+                }
+                if (titles.food) {
+                    document.getElementById('foodBadge').classList.add('unlocked');
+                }
+            }
+        }
+
+        // 初始化
+        loadGameData();
+    </script>
+</body>
+</html>
